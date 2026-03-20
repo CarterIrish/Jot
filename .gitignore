@@ -420,3 +420,4 @@ FodyWeavers.xsd
 # jot
 config.json
 out/
+/jot-roadmap.pdf
