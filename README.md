@@ -1,6 +1,6 @@
 # jot
 
-A portable CLI note manager for Windows `.txt` files. Scans a configured directory, presents an interactive list, and opens notes in Notepad.
+A CLI/TUI note manager. Currently a bare skeleton: `Config`, `NoteManager`, and `TUI` are stubbed out with no logic implemented yet.
 
 ## Building
 
@@ -15,23 +15,14 @@ Open the folder in Visual Studio 2022 via **File > Open > Folder**. VS will dete
 
 Output: `out/build/x64-Debug/jot.exe` or `out/build/x64-Release/jot.exe`.
 
-## Usage
+## Architecture
 
-On first launch, jot will prompt you for the path to your notes directory. This is saved to `config.json` next to the executable and loaded on subsequent runs.
+- `Config` - loads and saves settings (root notes directory, editor) to `config.json`
+- `NoteManager` - scans the notes directory and manages the in-memory note list, kept UI-agnostic so it can back both a TUI and a future ImGui GUI
+- `TUI` - terminal interface, drives `NoteManager`
 
-You can paste a path copied with "Copy as path" from Windows Explorer — surrounding quotes are handled automatically.
-
-## Configuration
-
-`config.json` is generated on first run and gitignored. A template is provided in `config.example.json`:
-
-```json
-{
-    "root_dir": "C:/Users/YourName/Notes",
-    "editor": "notepad"
-}
-```
+`config.example.json` shows the expected shape of the config file once `Config` is implemented.
 
 ## Status
 
-Currently in early alpha. See [releases](https://github.com/CarterIrish/Jot/releases) for what's implemented.
+Skeleton only. Nothing is implemented yet.
