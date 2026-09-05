@@ -6,15 +6,26 @@
 #include <stdexcept>
 #include <algorithm>
 
+/**
+ * Scans the specified directory and builds a tree of its contents.
+ * @param rootDir The path to the directory to scan.
+ */
 void NoteManager::scan(const std::string& rootDir) {
 	_rootNode = std::make_unique<DirNode>(buildTree(rootDir));
 }
 
+/**
+ * Recursively builds a directory tree from the given directory path.
+ * @param dirPath The path to the directory to build the tree from.
+ * @return The root node of the built directory tree.
+ */
 DirNode NoteManager::buildTree(const std::string& dirPath) {
+	// intialize notes and subDirs vectors
 	std::vector<Note> notes;
 	std::vector<std::unique_ptr<DirNode>> subDirs;
 	std::filesystem::directory_iterator dirIter(dirPath);
 
+	// Recursively iterate through the directory and its subdirectories
 	for (const auto& entry : dirIter) {
 		if (entry.is_directory()) {
 			// Recursively build the tree for the subdirectory
@@ -59,9 +70,15 @@ DirNode NoteManager::buildTree(const std::string& dirPath) {
 		sortedSubDirs.push_back(std::move(pair.second));
 	}
 	subDirs = std::move(sortedSubDirs);
+
+	// Return the constructed DirNode
 	return DirNode(dirPath, std::move(notes), std::move(subDirs));
 }
 
+/**
+ * Returns the root directory node.
+ * @return The root directory node.
+ */
 const DirNode& NoteManager::getRootNode() const {
 	if (_rootNode == nullptr) {
 		throw std::runtime_error("Root node is not initialized. Call scan() first.");
@@ -69,12 +86,21 @@ const DirNode& NoteManager::getRootNode() const {
 	return *_rootNode;
 }
 
+/**
+ * Flattens all notes from the directory tree.
+ * @return A vector containing all notes from the directory tree.
+ */
 std::vector<Note> NoteManager::flattenAll() {
 	std::vector<Note> allNotes;
 	flattenHelper(getRootNode(), allNotes);
 	return allNotes;
 }
 
+/**
+ * Recursively flattens the directory tree into a vector of notes.
+ * @param node The current directory node.
+ * @param allNotes The vector to store the flattened notes.
+ */
 void NoteManager::flattenHelper(const DirNode& node, std::vector<Note>& allNotes) {
 	allNotes.insert(allNotes.end(), node.notes.begin(), node.notes.end());
 	for (const auto& subDir : node.subDirs) {
