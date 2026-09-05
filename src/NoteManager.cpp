@@ -5,37 +5,89 @@
 #include <memory>
 #include <stdexcept>
 #include <algorithm>
+#include <system_error>
+
+namespace {
+	/**
+	 * Checks whether a candidate directory is already on the current recursion path.
+	 * Compares file identity rather than path text, so links and junctions that spell
+	 * the same directory differently still match.
+	 * @param candidate The directory to test.
+	 * @param ancestors Paths of the directories currently being walked.
+	 * @return True if candidate names the same directory as any ancestor.
+	 */
+	bool resolvesToAncestor(const std::filesystem::path& candidate, const std::vector<std::string>& ancestors) {
+		for (const std::string& ancestor : ancestors) {
+			std::error_code ec;
+			if (std::filesystem::equivalent(candidate, ancestor, ec)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Creates a directory node that has no notes and no subdirectories.
+	 * @param dirPath The path the node represents.
+	 * @return An empty node for dirPath.
+	 */
+	std::unique_ptr<DirNode> makeEmptyNode(const std::string& dirPath) {
+		return std::make_unique<DirNode>(dirPath, std::vector<Note>{}, std::vector<std::unique_ptr<DirNode>>{});
+	}
+}
 
 /**
  * Scans the specified directory and builds a tree of its contents.
+ * Clears any directories skipped by a previous scan.
  * @param rootDir The path to the directory to scan.
  */
 void NoteManager::scan(const std::string& rootDir) {
-	_rootNode = std::make_unique<DirNode>(buildTree(rootDir));
+	_skippedDirs.clear();
+	std::vector<std::string> ancestors;
+	_rootNode = std::make_unique<DirNode>(buildTree(rootDir, ancestors));
 }
 
 /**
  * Recursively builds a directory tree from the given directory path.
+ * Subdirectories that resolve to an ancestor are added without being followed, and
+ * subdirectories that cannot be read are recorded in the skipped list.
  * @param dirPath The path to the directory to build the tree from.
+ * @param ancestors Paths of the directories currently being walked.
  * @return The root node of the built directory tree.
  */
-DirNode NoteManager::buildTree(const std::string& dirPath) {
-	// intialize notes and subDirs vectors
+DirNode NoteManager::buildTree(const std::string& dirPath, std::vector<std::string>& ancestors) {
 	std::vector<Note> notes;
 	std::vector<std::unique_ptr<DirNode>> subDirs;
-	std::filesystem::directory_iterator dirIter(dirPath);
 
-	// Recursively iterate through the directory and its subdirectories
+	std::error_code ec;
+	std::filesystem::directory_iterator dirIter(dirPath, ec);
+	if (ec) {
+		_skippedDirs.emplace_back(dirPath, ec.message());
+		return DirNode(dirPath, std::move(notes), std::move(subDirs));
+	}
+
+	ancestors.push_back(dirPath);
+
 	for (const auto& entry : dirIter) {
-		if (entry.is_directory()) {
-			// Recursively build the tree for the subdirectory
-			subDirs.push_back(std::make_unique<DirNode>(buildTree(entry.path().string())));
+		if (entry.is_directory(ec)) {
+			// Following a link back into our own path would recurse forever
+			if (resolvesToAncestor(entry.path(), ancestors)) {
+				subDirs.push_back(makeEmptyNode(entry.path().string()));
+				continue;
+			}
+			subDirs.push_back(std::make_unique<DirNode>(buildTree(entry.path().string(), ancestors)));
+		}
+		else if (ec) {
+			// Status is unreadable, so record the entry without guessing at its contents
+			_skippedDirs.emplace_back(entry.path().string(), ec.message());
+			subDirs.push_back(makeEmptyNode(entry.path().string()));
 		}
 		else {
-			// Base case: create a Note object for the file, push to vector
 			notes.push_back(Note(entry.path().filename().string(), entry.path().string()));
 		}
 	}
+
+	ancestors.pop_back();
 
 	// sort notes
 	std::vector<std::pair<std::string, Note*>> keyedNotes;
@@ -84,6 +136,14 @@ const DirNode& NoteManager::getRootNode() const {
 		throw std::runtime_error("Root node is not initialized. Call scan() first.");
 	}
 	return *_rootNode;
+}
+
+/**
+ * Returns the directories that could not be read during the last scan.
+ * @return The skipped directories, each paired with the reason it was skipped.
+ */
+const std::vector<SkippedDir>& NoteManager::getSkippedDirs() const {
+	return _skippedDirs;
 }
 
 /**
