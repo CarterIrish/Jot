@@ -27,10 +27,23 @@ DirNode NoteManager::buildTree(const std::string& dirPath) {
 	}
 
 	// sort notes
-	std::sort(notes.begin(), notes.end(), [](const Note& a, const Note& b) {
-		return a.filename < b.filename;
-	});
+	std::vector<std::pair<std::string, Note*>> keyedNotes;
+	for (Note& note : notes) {
+		std::string lower = note.filename;
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		keyedNotes.emplace_back(lower, &note);
+	}
+	std::sort(keyedNotes.begin(), keyedNotes.end(), [](const auto& a, const auto& b) {
+		return a.first < b.first;
+		});
+	// Rebuild the notes vector in sorted order
+	std::vector<Note> sortedNotes;
+	for (std::pair<std::string, Note*>& pair : keyedNotes) {
+		sortedNotes.push_back(std::move(*pair.second));
+	}
+	notes = std::move(sortedNotes);
 
+	// sort subDirs
 	std::sort(subDirs.begin(), subDirs.end(), [](const std::unique_ptr<DirNode>& a, const std::unique_ptr<DirNode>& b) {
 		return a->dirPath < b->dirPath;
 	});
