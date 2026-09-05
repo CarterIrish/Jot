@@ -17,6 +17,7 @@ int main() {
     }
 
 	std::cout << "Root directory: " << config.getRootDir() << std::endl;
+    
     //manager.scan(config.getRootDir());
     //tui.run(manager);
 
