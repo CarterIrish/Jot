@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <unordered_set>
 
 struct Note {
 	std::string filename;
@@ -28,6 +27,6 @@ public:
 
 private:
 	std::unique_ptr<DirNode> _rootNode;
-	DirNode buildTree(const std::string& dirPath, std::unordered_set<std::string>& visited);
+	DirNode buildTree(const std::string& dirPath);
 	void flattenHelper(const DirNode& node, std::vector<Note>& allNotes);
 };
