@@ -4,30 +4,29 @@
 #include <memory>
 
 struct Note {
-    std::string filename;
-    std::string path;
+	std::string filename;
+	std::string path;
 
 	Note(std::string filename, std::string path) : filename(filename), path(path) {}
 };
 
 struct DirNode {
-    std::string name;
-    std::vector<Note> notes;
-    std::vector<std::unique_ptr<DirNode>> subDirs;
+	std::string dirPath;
+	std::vector<Note> notes;
+	std::vector<std::unique_ptr<DirNode>> subDirs;
 
-    DirNode(std::string name, std::vector<Note> notes, std::vector<std::unique_ptr<DirNode>> subDirs)
-        : name(std::move(name)), notes(std::move(notes)), subDirs(std::move(subDirs)) {}
+	DirNode(std::string name, std::vector<Note> notes, std::vector<std::unique_ptr<DirNode>> subDirs)
+		: dirPath(std::move(name)), notes(std::move(notes)), subDirs(std::move(subDirs)) {}
 };
 
 class NoteManager {
 public:
-    void scan(const std::string& rootDir);
-    const std::vector<Note>& getNotes() const;
-    void viewNote(const Note& note);
-    void editNote(const Note& note);
-    std::vector<Note> flattenAll(const std::string& rootDir);
-	DirNode buildTree(const std::string& dirPath);
+	void scan(const std::string& rootDir);
+	std::vector<Note> flattenAll();
+	const DirNode& getRootNode() const;
 
 private:
-    std::vector<Note> notes;
+	std::unique_ptr<DirNode> _rootNode;
+	DirNode buildTree(const std::string& dirPath);
+	void flattenHelper(const DirNode& node, std::vector<Note>& allNotes);
 };
