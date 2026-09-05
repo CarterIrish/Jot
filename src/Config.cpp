@@ -24,7 +24,7 @@ void Config::load() {
 	// Open the file stream for reading
 	std::ifstream configFile(configPath);
 	if (!configFile.is_open()) {
-		std::cerr << "Failed to open config file: " << configPath << std::endl;
+		std::cerr << "Failed to open config file: " << configPath << "\n";
 		firstRunSetup();
 		save();
 		return;
@@ -37,14 +37,14 @@ void Config::load() {
 		_editor = configJson.value("editor", "notepad");
 	}
 	catch (const std::exception& e) {
-		std::cerr << "Failed to parse config file " << configPath << ": " << e.what() << std::endl;
+		std::cerr << "Failed to parse config file " << configPath << ": " << e.what() << "\n";
 		firstRunSetup();
 		save();
 		return;
 	}
 
 	if (_rootDir.empty()) {
-		std::cerr << "Root directory is not set in the config file. Running startup setup..." << std::endl;
+		std::cerr << "Root directory is not set in the config file. Running startup setup..." << "\n";
 		firstRunSetup();
 		save();
 	}
@@ -64,7 +64,7 @@ void Config::save() const {
 		// Open the file stream for writing
 		std::ofstream configFile(configPath);
 		if (!configFile.is_open()) {
-			std::cerr << "Failed to open config file for write: " << configPath << std::endl;
+			std::cerr << "Failed to open config file for write: " << configPath << "\n";
 			return;
 		}
 		configFile << j.dump(4);
@@ -72,11 +72,11 @@ void Config::save() const {
 		// Close explicitly so the flush result can be checked
 		configFile.close();
 		if (!configFile.good()) {
-			std::cerr << "Failed to write config file: " << configPath << std::endl;
+			std::cerr << "Failed to write config file: " << configPath << "\n";
 		}
 	}
 	catch (const std::exception& e) {
-		std::cerr << "Failed to write json to config file at " << configPath << ": " << e.what() << std::endl;
+		std::cerr << "Failed to write json to config file at " << configPath << ": " << e.what() << "\n";
 	}
 }
 
