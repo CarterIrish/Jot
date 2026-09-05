@@ -5,37 +5,21 @@
 #include <memory>
 #include <stdexcept>
 #include <algorithm>
-#include <cctype>
-#include <unordered_set>
-#include <system_error>
 
 /**
  * Scans the specified directory and builds a tree of its contents.
  * @param rootDir The path to the directory to scan.
- * @throws std::runtime_error If the directory cannot be resolved.
  */
 void NoteManager::scan(const std::string& rootDir) {
-	// Holds the resolved location of every directory the scan enters, so a link that
-	// points back at one of them can be skipped instead of followed forever
-	std::unordered_set<std::string> visited;
-
-	std::error_code ec;
-	std::filesystem::path resolvedRoot = std::filesystem::canonical(rootDir, ec);
-	if (ec) {
-		throw std::runtime_error("Could not resolve notes directory \"" + rootDir + "\": " + ec.message());
-	}
-	visited.insert(resolvedRoot.string());
-
-	_rootNode = std::make_unique<DirNode>(buildTree(rootDir, visited));
+	_rootNode = std::make_unique<DirNode>(buildTree(rootDir));
 }
 
 /**
  * Recursively builds a directory tree from the given directory path.
  * @param dirPath The path to the directory to build the tree from.
- * @param visited Resolved paths of directories already entered, used to break link cycles.
  * @return The root node of the built directory tree.
  */
-DirNode NoteManager::buildTree(const std::string& dirPath, std::unordered_set<std::string>& visited) {
+DirNode NoteManager::buildTree(const std::string& dirPath) {
 	// intialize notes and subDirs vectors
 	std::vector<Note> notes;
 	std::vector<std::unique_ptr<DirNode>> subDirs;
@@ -44,16 +28,11 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::unordered_set<st
 	// Recursively iterate through the directory and its subdirectories
 	for (const auto& entry : dirIter) {
 		if (entry.is_directory()) {
-			std::error_code ec;
-			std::filesystem::path resolved = std::filesystem::canonical(entry.path(), ec);
-			if (ec || !visited.insert(resolved.string()).second) {
-				continue;
-			}
 			// Recursively build the tree for the subdirectory
-			subDirs.push_back(std::make_unique<DirNode>(buildTree(entry.path().string(), visited)));
+			subDirs.push_back(std::make_unique<DirNode>(buildTree(entry.path().string())));
 		}
 		else {
-			// Create a Note object for the file, push to vector
+			// Base case: create a Note object for the file, push to vector
 			notes.push_back(Note(entry.path().filename().string(), entry.path().string()));
 		}
 	}
@@ -62,9 +41,7 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::unordered_set<st
 	std::vector<std::pair<std::string, Note*>> keyedNotes;
 	for (Note& note : notes) {
 		std::string lower = note.filename;
-		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
-			return static_cast<char>(std::tolower(c));
-		});
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
 		keyedNotes.emplace_back(std::move(lower), &note);
 	}
 	std::sort(keyedNotes.begin(), keyedNotes.end(), [](const auto& a, const auto& b) {
@@ -81,9 +58,7 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::unordered_set<st
 	std::vector<std::pair<std::string, std::unique_ptr<DirNode>>> keyedSubDirs;
 	for (std::unique_ptr<DirNode>& subDir : subDirs) {
 		std::string lower = subDir->dirPath;
-		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
-			return static_cast<char>(std::tolower(c));
-		});
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
 		keyedSubDirs.emplace_back(std::move(lower), std::move(subDir));
 	}
 	std::sort(keyedSubDirs.begin(), keyedSubDirs.end(), [](const auto& a, const auto& b) {

@@ -12,17 +12,18 @@ int main() {
 
 	try {
 		config.load();
-		std::cout << "Root directory: " << config.getRootDir() << "\n";
-		manager.scan(config.getRootDir());
 	}
 	catch (const std::exception& e) {
-		std::cerr << e.what() << "\n";
+		std::cerr << e.what() << std::endl;
 		return 1;
 	}
 
-	std::cout << "Scanning completed." << "\n";
+	std::cout << "Root directory: " << config.getRootDir() << std::endl;
+	
+	manager.scan(config.getRootDir());
+	std::cout << "Scanning completed." << std::endl;
 	for (const Note& note : manager.flattenAll()) {
-		std::cout << note.path << "\n";
+		std::cout << note.path << std::endl;
 	}
 	//tui.run(manager);
 
