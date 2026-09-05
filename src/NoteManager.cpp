@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 #include <algorithm>
+#include <cctype>
 #include <system_error>
 
 namespace {
@@ -93,7 +94,7 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::vector<std::stri
 	std::vector<std::pair<std::string, Note*>> keyedNotes;
 	for (Note& note : notes) {
 		std::string lower = note.filename;
-		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 		keyedNotes.emplace_back(std::move(lower), &note);
 	}
 	std::sort(keyedNotes.begin(), keyedNotes.end(), [](const auto& a, const auto& b) {
@@ -110,7 +111,7 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::vector<std::stri
 	std::vector<std::pair<std::string, std::unique_ptr<DirNode>>> keyedSubDirs;
 	for (std::unique_ptr<DirNode>& subDir : subDirs) {
 		std::string lower = subDir->dirPath;
-		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 		keyedSubDirs.emplace_back(std::move(lower), std::move(subDir));
 	}
 	std::sort(keyedSubDirs.begin(), keyedSubDirs.end(), [](const auto& a, const auto& b) {
