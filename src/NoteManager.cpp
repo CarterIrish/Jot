@@ -31,7 +31,7 @@ DirNode NoteManager::buildTree(const std::string& dirPath) {
 	for (Note& note : notes) {
 		std::string lower = note.filename;
 		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-		keyedNotes.emplace_back(lower, &note);
+		keyedNotes.emplace_back(std::move(lower), &note);
 	}
 	std::sort(keyedNotes.begin(), keyedNotes.end(), [](const auto& a, const auto& b) {
 		return a.first < b.first;
@@ -44,9 +44,21 @@ DirNode NoteManager::buildTree(const std::string& dirPath) {
 	notes = std::move(sortedNotes);
 
 	// sort subDirs
-	std::sort(subDirs.begin(), subDirs.end(), [](const std::unique_ptr<DirNode>& a, const std::unique_ptr<DirNode>& b) {
-		return a->dirPath < b->dirPath;
-	});
+	std::vector<std::pair<std::string, std::unique_ptr<DirNode>>> keyedSubDirs;
+	for (std::unique_ptr<DirNode>& subDir : subDirs) {
+		std::string lower = subDir->dirPath;
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		keyedSubDirs.emplace_back(std::move(lower), std::move(subDir));
+	}
+	std::sort(keyedSubDirs.begin(), keyedSubDirs.end(), [](const auto& a, const auto& b) {
+		return a.first < b.first;
+		});
+	// rebuild subDirs vector in sorted order
+	std::vector<std::unique_ptr<DirNode>> sortedSubDirs;
+	for (std::pair<std::string, std::unique_ptr<DirNode>>& pair : keyedSubDirs) {
+		sortedSubDirs.push_back(std::move(pair.second));
+	}
+	subDirs = std::move(sortedSubDirs);
 	return DirNode(dirPath, std::move(notes), std::move(subDirs));
 }
 
