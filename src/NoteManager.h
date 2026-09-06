@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <utility>
 
 struct Note {
 	std::string filename;
