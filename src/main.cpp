@@ -27,6 +27,8 @@ int main() {
 	for (const Note& note : manager.flattenAll()) {
 		std::cout << note.path << "\n";
 	}
+	std::cout << "Press Enter to exit demo...";
+	std::getline(std::cin, std::string());
 	//tui.run(manager);
 
 	return 0;
