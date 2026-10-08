@@ -17,7 +17,7 @@ int main() {
 	#endif
 	Config config;
 	NoteManager manager;
-	TUI tui;
+	//TUI tui;
 
 	try {
 		config.load();
