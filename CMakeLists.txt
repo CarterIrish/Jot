@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 project(jot VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
 
 include(FetchContent)
 FetchContent_Declare(
@@ -19,6 +21,12 @@ add_executable(jot
 	src/NoteManager.cpp
 	src/TUI.cpp
 )
+
+if(MSVC)
+	target_compile_options(jot PRIVATE /W4 /permissive-)
+else()
+	target_compile_options(jot PRIVATE -Wall -Wextra -Wpedantic)
+endif()
 
 target_include_directories(jot PRIVATE src)
 target_link_libraries(jot PRIVATE nlohmann_json::nlohmann_json)

@@ -61,18 +61,21 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::vector<std::stri
 	std::vector<Note> notes;
 	std::vector<std::unique_ptr<DirNode>> subDirs;
 
+	// check for an error when creating the directory iterator
 	std::error_code ec;
 	std::filesystem::directory_iterator dirIter(dirPath, ec);
 	if (ec) {
 		_skippedDirs.emplace_back(dirPath, ec.message());
 		return DirNode(dirPath, std::move(notes), std::move(subDirs));
 	}
-
+	// Add the current directory to the list of ancestors to prevent infinite recursion
 	ancestors.push_back(dirPath);
 
-	for (const auto& entry : dirIter) {
+	// Iterate through the directory entries
+	std::error_code iterEc;
+	for (; dirIter != std::filesystem::directory_iterator(); dirIter.increment(iterEc)) {
+		const auto& entry = *dirIter;
 		if (entry.is_directory(ec)) {
-			// Following a link back into our own path would recurse forever
 			if (resolvesToAncestor(entry.path(), ancestors)) {
 				subDirs.push_back(makeEmptyNode(entry.path().string()));
 				continue;
@@ -85,22 +88,26 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::vector<std::stri
 			subDirs.push_back(makeEmptyNode(entry.path().string()));
 		}
 		else {
-			notes.push_back(Note(entry.path().filename().string(), entry.path().string()));
+			notes.emplace_back(entry.path());
 		}
 	}
 
 	ancestors.pop_back();
 
+	if (iterEc) {
+		_skippedDirs.emplace_back(dirPath, "listing incomplete: " + iterEc.message());
+	}
+
 	// sort notes
 	std::vector<std::pair<std::string, Note*>> keyedNotes;
 	for (Note& note : notes) {
-		std::string lower = note.filename;
+		std::string lower = note.filePath.u8string();
 		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 		keyedNotes.emplace_back(std::move(lower), &note);
 	}
 	std::sort(keyedNotes.begin(), keyedNotes.end(), [](const auto& a, const auto& b) {
 		return a.first < b.first;
-		});
+	});
 	// Rebuild the notes vector in sorted order
 	std::vector<Note> sortedNotes;
 	for (std::pair<std::string, Note*>& pair : keyedNotes) {

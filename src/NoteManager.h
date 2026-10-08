@@ -3,12 +3,12 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <filesystem>
 
 struct Note {
-	std::string filename;
-	std::string path;
-
-	Note(std::string filename, std::string path) : filename(filename), path(path) {}
+	std::filesystem::path filePath;
+	
+	explicit Note(std::filesystem::path path) : filePath(std::move(path)) {}
 };
 
 struct DirNode {

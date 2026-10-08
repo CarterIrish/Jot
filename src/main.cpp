@@ -3,9 +3,18 @@
 #include "TUI.h"
 #include <iostream>
 #include <exception>
+#include <string>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
 
 int main() {
+	#ifdef _WIN32
+		SetConsoleOutputCP(CP_UTF8);
+	#endif
 	Config config;
 	NoteManager manager;
 	TUI tui;
@@ -25,10 +34,11 @@ int main() {
 		std::cerr << "  warning: skipped \"" << skipped.path << "\" (" << skipped.reason << ")\n";
 	}
 	for (const Note& note : manager.flattenAll()) {
-		std::cout << note.path << "\n";
+		std::cout << note.filePath.u8string() << "\n";
 	}
 	std::cout << "Press Enter to exit demo...";
-	std::getline(std::cin, std::string());
+	std::string unused;
+	std::getline(std::cin, unused);
 	//tui.run(manager);
 
 	return 0;
