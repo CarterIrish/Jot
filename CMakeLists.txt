@@ -20,6 +20,7 @@ add_executable(jot
 	src/Config.cpp
 	src/NoteManager.cpp
 	src/TUI.cpp
+	src/terminal.cpp
 )
 
 if(MSVC)
