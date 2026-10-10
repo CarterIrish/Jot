@@ -1,12 +1,12 @@
 #pragma once
-#include <string>
 #include <filesystem>
+#include <string>
 
 class Config {
 public:
     void load();
     void save() const;
-    std::string getRootDir() const;
+    std::filesystem::path getRootDir() const;
 
 private:
 	std::filesystem::path getConfigPath() const;

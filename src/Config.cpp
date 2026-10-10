@@ -1,8 +1,13 @@
 #include "Config.h"
-#include <nlohmann/json.hpp>
+#include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <stdexcept>
+#include <string>
+#include <system_error>
 
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
@@ -84,8 +89,8 @@ void Config::save() const {
  * Gets the root directory.
  * @return The root directory.
  */
-std::string Config::getRootDir() const {
-    return _rootDir;
+std::filesystem::path Config::getRootDir() const {
+    return std::filesystem::u8path(_rootDir);
 }
 
 /**

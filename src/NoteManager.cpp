@@ -1,13 +1,13 @@
 #include "NoteManager.h"
-#include <filesystem>
-#include <vector>
-#include <string>
-#include <memory>
-#include <stdexcept>
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
+#include <memory>
+#include <stdexcept>
+#include <string>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace {
 	/**
@@ -18,8 +18,8 @@ namespace {
 	 * @param ancestors Paths of the directories currently being walked.
 	 * @return True if candidate names the same directory as any ancestor.
 	 */
-	bool resolvesToAncestor(const std::filesystem::path& candidate, const std::vector<std::string>& ancestors) {
-		for (const std::string& ancestor : ancestors) {
+	bool resolvesToAncestor(const std::filesystem::path& candidate, const std::vector<std::filesystem::path>& ancestors) {
+		for (const std::filesystem::path& ancestor : ancestors) {
 			std::error_code ec;
 			if (std::filesystem::equivalent(candidate, ancestor, ec)) {
 				return true;
@@ -33,7 +33,7 @@ namespace {
 	 * @param dirPath The path the node represents.
 	 * @return An empty node for dirPath.
 	 */
-	std::unique_ptr<DirNode> makeEmptyNode(const std::string& dirPath) {
+	std::unique_ptr<DirNode> makeEmptyNode(const std::filesystem::path& dirPath) {
 		return std::make_unique<DirNode>(dirPath, std::vector<Note>{}, std::vector<std::unique_ptr<DirNode>>{});
 	}
 }
@@ -43,9 +43,9 @@ namespace {
  * Clears any directories skipped by a previous scan.
  * @param rootDir The path to the directory to scan.
  */
-void NoteManager::scan(const std::string& rootDir) {
+void NoteManager::scan(const std::filesystem::path& rootDir) {
 	_skippedDirs.clear();
-	std::vector<std::string> ancestors;
+	std::vector<std::filesystem::path> ancestors;
 	_rootNode = std::make_unique<DirNode>(buildTree(rootDir, ancestors));
 }
 
@@ -57,7 +57,7 @@ void NoteManager::scan(const std::string& rootDir) {
  * @param ancestors Paths of the directories currently being walked.
  * @return The root node of the built directory tree.
  */
-DirNode NoteManager::buildTree(const std::string& dirPath, std::vector<std::string>& ancestors) {
+DirNode NoteManager::buildTree(const std::filesystem::path& dirPath, std::vector<std::filesystem::path>& ancestors) {
 	std::vector<Note> notes;
 	std::vector<std::unique_ptr<DirNode>> subDirs;
 
@@ -77,15 +77,15 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::vector<std::stri
 		const auto& entry = *dirIter;
 		if (entry.is_directory(ec)) {
 			if (resolvesToAncestor(entry.path(), ancestors)) {
-				subDirs.push_back(makeEmptyNode(entry.path().string()));
+				subDirs.push_back(makeEmptyNode(entry.path()));
 				continue;
 			}
-			subDirs.push_back(std::make_unique<DirNode>(buildTree(entry.path().string(), ancestors)));
+			subDirs.push_back(std::make_unique<DirNode>(buildTree(entry.path(), ancestors)));
 		}
 		else if (ec) {
 			// Status is unreadable, so record the entry without guessing at its contents
-			_skippedDirs.emplace_back(entry.path().string(), ec.message());
-			subDirs.push_back(makeEmptyNode(entry.path().string()));
+			_skippedDirs.emplace_back(entry.path(), ec.message());
+			subDirs.push_back(makeEmptyNode(entry.path()));
 		}
 		else {
 			notes.emplace_back(entry.path());
@@ -118,7 +118,7 @@ DirNode NoteManager::buildTree(const std::string& dirPath, std::vector<std::stri
 	// sort subDirs
 	std::vector<std::pair<std::string, std::unique_ptr<DirNode>>> keyedSubDirs;
 	for (std::unique_ptr<DirNode>& subDir : subDirs) {
-		std::string lower = subDir->dirPath;
+		std::string lower = subDir->dirPath.u8string();
 		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 		keyedSubDirs.emplace_back(std::move(lower), std::move(subDir));
 	}

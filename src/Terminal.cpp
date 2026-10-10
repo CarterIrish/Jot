@@ -2,10 +2,9 @@
 #include <stdexcept>
 
 #ifdef _WIN32
-#include <windows.h>
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-
+#include <windows.h>
 
 namespace {
 	KeyEvent translateKey(const KEY_EVENT_RECORD& rec) {
