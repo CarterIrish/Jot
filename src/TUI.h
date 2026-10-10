@@ -2,7 +2,7 @@
 #include "NoteManager.h"
 #include <string>
 #include <vector>
-
+#include  "Terminal.h"
 
 class TUI 
 {
@@ -19,9 +19,15 @@ class TUI
 	};
 
 public:
-	TUI();
+	explicit TUI(NoteManager& noteManager);
 	void run();
 private:
+	void render() const;
+	static std::vector<BrowserEntry> buildBrowserEntries(const DirNode& node);
+
 	std::vector<BrowserEntry> _browserEntries;
 	std::size_t _selectedIndex = 0;
+	NoteManager& _noteManager;
+	Terminal _term;
 };
+
