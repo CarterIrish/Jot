@@ -24,7 +24,11 @@ int main() {
 		// Setup the run environment
 		config.load();
 		manager.scan(config.getRootDir()); // Create the note tree
-		// Launch the TUI
+		std::cout << "Scanning completed.\n";
+		for (const SkippedDir& skipped : manager.getSkippedDirs()) {
+			std::cerr << "  [WARNING] Skipped \"" << skipped.dirPath.u8string() << "\" (" << skipped.reason << ")\n";
+		}
+		// Launch and run the TUI
 		TUI tui(manager);
 		tui.run();
 	}
@@ -32,16 +36,5 @@ int main() {
 		std::cerr << e.what() << "\n";
 		return 1;
 	}
-
-#pragma region DebugOutput
-	//// Display the results of scan 
-	//std::cout << "Scanning completed.\n";
-	//for (const SkippedDir& skipped : manager.getSkippedDirs()) {
-	//	std::cerr << "  warning: skipped \"" << skipped.dirPath.u8string() << "\" (" << skipped.reason << ")\n";
-	//}
-	//for (const Note& note : manager.flattenAll()) {
-	//	std::cout << note.filePath.u8string() << "\n";
-	//}
-#pragma endregion
 	return 0;
 }

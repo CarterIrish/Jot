@@ -46,8 +46,10 @@ void TUI::render() const {
  */
 std::vector<TUI::BrowserEntry> TUI::buildBrowserEntries(const DirNode& node)
 {
+	// Create the vector of entries for a directory
 	std::vector<TUI::BrowserEntry> entries;
-	entries.reserve(node.subDirs.size() + node.notes.size());
+	entries.reserve(node.subDirs.size() + node.notes.size()); // Avoid multiple reallocations 
+	// Organize the dir first
 	for (const std::unique_ptr<DirNode>& subDir : node.subDirs) {
 		entries.push_back({ EntryType::Dir, subDir->dirPath.filename().u8string(), subDir.get(), nullptr });
 	}
