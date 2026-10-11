@@ -10,11 +10,12 @@ TUI::TUI(NoteManager& noteManager) : _noteManager(noteManager) {}
 void TUI::run()
 {
 	_isRunning = true;
-	// Build the browser entries from the note manager's root node
-	_browserEntries = buildBrowserEntries(_noteManager.getRootNode());
+	_dirStack.clear();
+	_dirStack.push_back({ &_noteManager.getRootNode(), 0, 0 });
+	_browserEntries = buildBrowserEntries(*current().node);	
 	while (_isRunning)
 	{
-		clampScroll(_term.rows()-1);
+		clampScroll(_term.rows() - 1);
 		render();
 		KeyEvent e = _term.readKey();
 		switch (e.key) {
@@ -22,50 +23,66 @@ void TUI::run()
 			_isRunning = false;
 			break;
 		case Key::Up:
-			if (_selectedIndex > 0) _selectedIndex--;
+			if (current().selectedIndex > 0) current().selectedIndex--;
 			break;
 		case Key::Down:
-			if (_selectedIndex + 1 < _browserEntries.size()) _selectedIndex++;
+			if (current().selectedIndex + 1 < _browserEntries.size()) current().selectedIndex++;
 			break;
 		case Key::Enter:
-			if (_browserEntries[_selectedIndex].type == EntryType::Dir) {
-				// Navigate into the dir
-				_browserEntries = buildBrowserEntries(*_browserEntries[_selectedIndex].dirNode);
-				_selectedIndex = 0;
-				_scrollOffset = 0;	
+			if (!_browserEntries.empty() && _browserEntries[current().selectedIndex].type == EntryType::Dir) {
+				const DirNode& dirNode = *_browserEntries[current().selectedIndex].dirNode;
+				if (dirNode.subDirs.empty() && dirNode.notes.empty()) {
+					// TODO: need UI feedback to indicate why the user cannot navigate into the directory
+					break;
+				}
+				// The parent frame keeps its cursor, so Left returns to the same spot
+				_dirStack.push_back({ &dirNode, 0, 0 });
+				_browserEntries = buildBrowserEntries(dirNode);
+			}
+			break;
+		case Key::Left:
+			if (_dirStack.size() > 1) {
+				_dirStack.pop_back();
+				_browserEntries = buildBrowserEntries(*current().node);
 			}
 			break;
 		}
 	}
 }
 
-/**
- * Renders a frame to the terminal.
- */
-void TUI::render() const {
-	
-	// determine the amount of space I have to print the entries
-	std::size_t visibleRows = _term.rows() - 1;
-	std::size_t end = std::min(_scrollOffset + visibleRows, _browserEntries.size());
 
+void TUI::render() const {
+	const NavFrame& nav = current();
+	std::size_t visibleRows = _term.rows() - 1;
+	std::size_t end = std::min(nav.scrollOffset + visibleRows, _browserEntries.size());
 
 	std::string frame;
 	frame += "\033[?2026h"; // sync update
-	frame += "\033[?25l"; // Hide the cursor
-	frame += "\033[H"; // Move the cursor to top left
+	frame += "\033[?25l";   // Hide the cursor
+	frame += "\033[H";      // Move the cursor to top left
 
-	for (std::size_t i = _scrollOffset; i < end; i++) {
+	for (std::size_t i = nav.scrollOffset; i < end; i++) {
 		const BrowserEntry& entry = _browserEntries[i];
-		if (i == _selectedIndex) frame += "\033[7m"; // Invert colors for selected entry
+		if (i == nav.selectedIndex) frame += "\033[7m"; // Invert colors for selected entry
 		frame += entry.type == EntryType::Dir ? "[DIR] " : "[NOTE] ";
 		frame += entry.displayName;
 		frame += "\033[K\033[0m\n";
 	}
-	frame += "Use arrow keys to navigate, Enter to open, Esc to exit. \033[K";
-	frame += "\033[J"; // Clear to end of screen
+	frame += "Use arrow keys to navigate, Enter to open, Left to go back, Esc to exit. \033[K";
+	frame += "\033[J";      // Clear to end of screen
 	frame += "\033[?2026l"; // End the sync update
 
 	std::cout << frame << std::flush;
+}
+
+void TUI::clampScroll(std::size_t visibleRows) {
+	NavFrame& nav = current();
+	if (nav.selectedIndex > nav.scrollOffset + visibleRows - 1) {
+		nav.scrollOffset = nav.selectedIndex - visibleRows + 1;
+	}
+	else if (nav.selectedIndex < nav.scrollOffset) {
+		nav.scrollOffset = nav.selectedIndex;
+	}
 }
 
 /**
@@ -88,11 +105,4 @@ std::vector<TUI::BrowserEntry> TUI::buildBrowserEntries(const DirNode& node)
 	return entries;
 }
 
-void TUI::clampScroll(std::size_t visibleRows) {
-	if (_selectedIndex > _scrollOffset + visibleRows - 1) {
-		_scrollOffset = _selectedIndex - visibleRows + 1;
-	}
-	else if (_selectedIndex < _scrollOffset) {
-		_scrollOffset = _selectedIndex;
-	}
-}
+

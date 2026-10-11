@@ -18,6 +18,12 @@ class TUI
 		const Note* note = nullptr; // Only used if type == NoteEntry
 	};
 
+	struct NavFrame {
+		const DirNode* node;
+		std::size_t selectedIndex;
+		std::size_t scrollOffset;
+	};
+
 public:
 	explicit TUI(NoteManager& noteManager);
 	void run();
@@ -26,12 +32,13 @@ private:
 	static std::vector<BrowserEntry> buildBrowserEntries(const DirNode& node);
 	void clampScroll(std::size_t visibleRows);
 
+	NavFrame& current() { return _dirStack.back(); }
+	const NavFrame& current() const { return _dirStack.back(); }
+
 	std::vector<BrowserEntry> _browserEntries;
-	std::size_t _selectedIndex = 0;
 	NoteManager& _noteManager;
 	Terminal _term;
 	bool _isRunning = true;
-	std::size_t _scrollOffset = 0;
-	std::vector<BrowserEntry> _history; // Stack of previous browser entries for navigation
+	std::vector<NavFrame> _dirStack; // Stack to keep track of the directory navigation
 };
 
