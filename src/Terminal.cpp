@@ -1,5 +1,6 @@
 #include "Terminal.h"
 #include <stdexcept>
+#include <iostream>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -46,9 +47,11 @@ Terminal::Terminal() {
 		throw std::runtime_error("could not enable ANSI output");
 	}
 	_savedOutMode = outMode;
+	std::cout << "\033[?1049h" << std::flush; // Switch to alternate buffer
 }
 
 Terminal::~Terminal() {
+	std::cout << "\033[?1049l" << std::flush; // Switch back to normal buffer	
 	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), _savedInMode);
 	SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), _savedOutMode);
 }
@@ -65,6 +68,17 @@ KeyEvent Terminal::readKey() {
 			return translateKey(rec.Event.KeyEvent);
 		}
 	}
+}
+
+/**
+ * Returns the number of rows in the terminal.
+ */
+std::size_t Terminal::rows() const {
+	CONSOLE_SCREEN_BUFFER_INFO buffInfo;
+	if (!GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &buffInfo)) {
+		throw std::runtime_error("failed to get console screen buffer info");
+	}
+	return static_cast<std::size_t>(buffInfo.srWindow.Bottom - buffInfo.srWindow.Top + 1);
 }
 
 #else

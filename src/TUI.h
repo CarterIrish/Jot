@@ -24,10 +24,13 @@ public:
 private:
 	void render() const;
 	static std::vector<BrowserEntry> buildBrowserEntries(const DirNode& node);
+	void clampScroll(std::size_t visibleRows);
 
 	std::vector<BrowserEntry> _browserEntries;
 	std::size_t _selectedIndex = 0;
 	NoteManager& _noteManager;
 	Terminal _term;
+	bool _isRunning = true;
+	std::size_t _scrollOffset = 0;
 };
 

@@ -3,6 +3,7 @@
 #ifndef _WIN32
 #include <termios.h>
 #endif
+#include <string>
 
 enum class Key {
     Unknown,
@@ -28,8 +29,8 @@ public:
     Terminal(const Terminal&) = delete;
     Terminal& operator=(const Terminal&) = delete;
 
-	KeyEvent readKey();
-
+    KeyEvent readKey();
+    std::size_t rows() const;
 private:
 #ifdef _WIN32
     unsigned long _savedInMode = 0;
