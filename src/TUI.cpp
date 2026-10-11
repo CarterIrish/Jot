@@ -27,6 +27,14 @@ void TUI::run()
 		case Key::Down:
 			if (_selectedIndex + 1 < _browserEntries.size()) _selectedIndex++;
 			break;
+		case Key::Enter:
+			if (_browserEntries[_selectedIndex].type == EntryType::Dir) {
+				// Navigate into the dir
+				_browserEntries = buildBrowserEntries(*_browserEntries[_selectedIndex].dirNode);
+				_selectedIndex = 0;
+				_scrollOffset = 0;	
+			}
+			break;
 		}
 	}
 }

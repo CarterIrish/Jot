@@ -32,5 +32,6 @@ private:
 	Terminal _term;
 	bool _isRunning = true;
 	std::size_t _scrollOffset = 0;
+	std::vector<BrowserEntry> _history; // Stack of previous browser entries for navigation
 };
 
